@@ -1,0 +1,48 @@
+org: nimff
+app: backend2
+service: backend
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  environment:
+    BUCKET_NAME: ${self:service}-public-photos-${sls:stage}
+
+functions:
+  hello:
+    handler: handler.savePhoto
+    events:
+      - httpApi:
+          path: /
+          method: post
+iam:
+  role:
+    statements:
+      - Effect: Allow
+        Action:
+         - "s3:*"
+        Resource: "arn:aws:s3:::${self:service}-public-photos-${sls:stage}" 
+resources:
+  Resources:
+      PhotoBucket: 
+        Type: AWS::S3::Bucket
+        Properties:
+          BucketName: ${self:service}-public-photos-${sls:stage}
+      PhotoBucketAllowPublicReadPolicy:
+        Type: AWS::S3::BucketPolicy
+        Properties:
+          Bucket: !Ref PhotoBucket
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement: 
+              - Effect: Allow
+                Action: 
+                  - "s3:GetObject"
+                Resource: 
+                  - !Join ['/', [!GetAtt [PhotoBucket, Arn], '*']]
+                Principal: "*"    
+
+  
+plugins:
+  - serverless-offline

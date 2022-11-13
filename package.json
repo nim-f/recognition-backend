@@ -1,0 +1,15 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.1252.0",
+    "lambda-multipart-parser": "^1.0.1",
+    "serverless-offline": "^11.3.0"
+  },
+  "scripts": {
+    "dev": "sls offline",
+    "deploy": "sls deploy"
+  }
+}

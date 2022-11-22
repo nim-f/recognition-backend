@@ -8,21 +8,17 @@ provider:
   runtime: nodejs14.x
   environment:
     BUCKET_NAME: ${self:service}-public-photos-${sls:stage}
-
-functions:
-  hello:
-    handler: handler.savePhoto
-    events:
-      - httpApi:
-          path: /
-          method: post
-iam:
-  role:
-    statements:
-      - Effect: Allow
-        Action:
-         - "s3:*"
-        Resource: "arn:aws:s3:::${self:service}-public-photos-${sls:stage}" 
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+          - "s3:*"
+          Resource: "arn:aws:s3:::${self:service}-public-photos-${sls:stage}" 
+        - Effect: Allow
+          Action: 
+            - "rekognition:detectLabels"
+          Resource: "*"  
 resources:
   Resources:
       PhotoBucket: 
@@ -43,6 +39,13 @@ resources:
                   - !Join ['/', [!GetAtt [PhotoBucket, Arn], '*']]
                 Principal: "*"    
 
+functions:
+  hello:
+    handler: handler.savePhoto
+    events:
+      - httpApi:
+          path: /
+          method: post
   
 plugins:
   - serverless-offline

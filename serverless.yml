@@ -6,8 +6,11 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs14.x
+  timeout: 20
   environment:
-    BUCKET_NAME: ${self:service}-public-photos-${sls:stage}
+    ORIGINAL_BUCKET_NAME: ${self:service}-public-photos-${sls:stage}
+    THUMBNAIL_BUCKET_NAME: ${self:service}-public-thumbs-${sls:stage}
+    PHOTOS_TABLE: ${self:service}-photos-${sls:stage}
   iam:
     role:
       statements:
@@ -16,36 +19,90 @@ provider:
           - "s3:*"
           Resource: "arn:aws:s3:::${self:service}-public-photos-${sls:stage}" 
         - Effect: Allow
+          Action:
+          - "s3:*"
+          Resource: "arn:aws:s3:::${self:service}-public-thumbs-${sls:stage}" 
+        - Effect: Allow
           Action: 
             - "rekognition:detectLabels"
-          Resource: "*"  
+          Resource: "*"
+        - Effect: Allow
+          Action: 
+          - 'dynamodb:PutItem'    
+          - 'dynamodb:Get*'    
+          - 'dynamodb:Scan'    
+          - 'dynamodb:Query'    
+          - 'dynamodb:UpdateItem'    
+          - 'dynamodb:DeleteItem'    
+          Resource: "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-photos-${sls:stage}" 
 resources:
   Resources:
-      PhotoBucket: 
-        Type: AWS::S3::Bucket
-        Properties:
-          BucketName: ${self:service}-public-photos-${sls:stage}
-      PhotoBucketAllowPublicReadPolicy:
-        Type: AWS::S3::BucketPolicy
-        Properties:
-          Bucket: !Ref PhotoBucket
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement: 
-              - Effect: Allow
-                Action: 
-                  - "s3:GetObject"
-                Resource: 
-                  - !Join ['/', [!GetAtt [PhotoBucket, Arn], '*']]
-                Principal: "*"    
+    PhotosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-photos-${sls:stage}
+        AttributeDefinitions:
+          - AttributeName: primary_key
+            AttributeType: S
+        KeySchema:
+          - AttributeName: primary_key
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
 
+    PhotoBucket: 
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-public-photos-${sls:stage}
+    PhotoBucketAllowPublicReadPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref PhotoBucket
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement: 
+            - Effect: Allow
+              Action: 
+                - "s3:*"
+              Resource: 
+                - !Join ['/', [!GetAtt [PhotoBucket, Arn], '*']]
+              Principal: "*"    
+
+    ThumbsBucket: 
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-public-thumbs-${sls:stage}
+    ThumbsBucketAllowPublicReadPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref ThumbsBucket
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement: 
+            - Effect: Allow
+              Action: 
+                - "s3:*"
+              Resource: 
+                - !Join ['/', [!GetAtt [ThumbsBucket, Arn], '*']]
+              Principal: "*"    
 functions:
-  hello:
-    handler: handler.savePhoto
+  savePhoto:
+    handler: functions/savePhoto.savePhoto
     events:
       - httpApi:
           path: /
           method: post
-  
+  getPhotos:
+    handler: functions/getPhotos.getPhotos        
+    events: 
+      - httpApi: 
+          path: /
+          method: get
+
+
 plugins:
   - serverless-offline
+custom:
+  serverless-offline:
+    useChildProcesses: true

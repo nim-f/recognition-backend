@@ -69,6 +69,10 @@ module.exports.savePhoto = async (event) => {
         const results = await Promise.all(filesData);
 
         return {
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+            },
             statusCode: 200,
             body: JSON.stringify({
                 results,
@@ -77,6 +81,10 @@ module.exports.savePhoto = async (event) => {
     } catch (error) {
         console.error(error);
         return {
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+            },
             statusCode: 400,
             body: JSON.stringify({
                 error,

@@ -1,4 +1,3 @@
-org: nimff
 app: backend2
 service: backend
 frameworkVersion: '3'

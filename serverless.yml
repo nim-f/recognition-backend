@@ -33,7 +33,10 @@ provider:
           - 'dynamodb:Query'    
           - 'dynamodb:UpdateItem'    
           - 'dynamodb:DeleteItem'    
-          Resource: "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-photos-${sls:stage}" 
+          Resource: "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-photos-${sls:stage}"
+  httpApi:
+    cors: true
+         
 resources:
   Resources:
     PhotosTable:
@@ -92,7 +95,6 @@ functions:
       - httpApi:
           path: /
           method: post
-          cors: true
 
   getPhotos:
     handler: functions/getPhotos.getPhotos        
@@ -100,8 +102,6 @@ functions:
       - httpApi: 
           path: /
           method: get
-          cors: true
-
 
 plugins:
   - serverless-offline

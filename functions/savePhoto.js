@@ -1,18 +1,18 @@
-const AWS = require("aws-sdk");
 const parser = require("lambda-multipart-parser");
 const { v4: uuidv4 } = require("uuid");
 const sharp = require("sharp");
+const sendResponse = require("../utils/sendResponse");
+const {
+    PHOTOS_TABLE,
+    ORIGINAL_BUCKET_NAME,
+    THUMBNAIL_BUCKET_NAME,
+} = require("../const/paths");
+
+const { s3, rekognition, dynamoDb } = require("../const/providers");
 
 const width = 600;
 
-const s3 = new AWS.S3();
-const rekognition = new AWS.Rekognition();
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
-
 async function saveFile(file) {
-    const BucketName = process.env.ORIGINAL_BUCKET_NAME;
-    const ThumbnailBucketName = process.env.THUMBNAIL_BUCKET_NAME;
-
     const thumbnail = await sharp(file.content)
         .resize(width)
         .withMetadata()
@@ -20,7 +20,7 @@ async function saveFile(file) {
 
     await s3
         .putObject({
-            Bucket: ThumbnailBucketName,
+            Bucket: THUMBNAIL_BUCKET_NAME,
             Key: file.filename,
             Body: thumbnail,
         })
@@ -28,7 +28,7 @@ async function saveFile(file) {
 
     await s3
         .putObject({
-            Bucket: BucketName,
+            Bucket: ORIGINAL_BUCKET_NAME,
             Key: file.filename,
             Body: file.content,
         })
@@ -46,7 +46,7 @@ async function saveFile(file) {
     const labels = Labels.map((label) => label.Name);
     await dynamoDb
         .put({
-            TableName: process.env.PHOTOS_TABLE,
+            TableName: PHOTOS_TABLE,
             Item: {
                 primary_key,
                 name: file.filename,
@@ -56,8 +56,8 @@ async function saveFile(file) {
         .promise();
     return {
         primary_key,
-        savedFile: `https://${BucketName}.s3.amazonaws.com/${file.filename}`,
-        thumbnail: `https://${ThumbnailBucketName}.s3.amazonaws.com/${file.filename}`,
+        savedFile: `https://${ORIGINAL_BUCKET_NAME}.s3.amazonaws.com/${file.filename}`,
+        thumbnail: `https://${THUMBNAIL_BUCKET_NAME}.s3.amazonaws.com/${file.filename}`,
         labels,
     };
 }
@@ -68,27 +68,9 @@ module.exports.savePhoto = async (event) => {
         const filesData = files.map(saveFile);
         const results = await Promise.all(filesData);
 
-        return {
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Credentials": true,
-            },
-            statusCode: 200,
-            body: JSON.stringify({
-                results,
-            }),
-        };
+        return sendResponse(200, results);
     } catch (error) {
         console.error(error);
-        return {
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Credentials": true,
-            },
-            statusCode: 400,
-            body: JSON.stringify({
-                error,
-            }),
-        };
+        return sendResponse(400, error);
     }
 };

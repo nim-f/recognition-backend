@@ -1,24 +1,16 @@
 const AWS = require("aws-sdk");
 const formatPhotoResponse = require("../utils/formatPhotoResponse");
-
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const sendResponse = require("../utils/sendResponse");
+const { PHOTOS_TABLE } = require("../const/paths");
+const { dynamoDb } = require("../const/providers");
 
 module.exports.getPhotos = async (event) => {
     const results = await dynamoDb
         .scan({
-            TableName: process.env.PHOTOS_TABLE,
+            TableName: PHOTOS_TABLE,
             Limit: 50,
         })
         .promise();
 
-    return {
-        statusCode: 200,
-        headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Credentials": true,
-        },
-        body: JSON.stringify({
-            results: formatPhotoResponse(results.Items),
-        }),
-    };
+    return sendResponse(200, formatPhotoResponse(results.Items));
 };

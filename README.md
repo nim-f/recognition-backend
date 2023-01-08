@@ -10,6 +10,12 @@ authorName: 'Serverless, inc.'
 authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
 -->
 
+# Smart photo album tutorial 
+
+The repo is a part of fullstack tutorial about AWS recognition, Serverless and React. 
+
+You can find the tutorial here: [AWS Rekognition fullstack tutorial](https://www.youtube.com/playlist?list=PLivfVBKXLkx8r8xOssrGuiyOoH5W4qulN)
+
 # Serverless Framework Node HTTP API on AWS
 
 This template demonstrates how to make a simple HTTP API with Node.js running on AWS Lambda and API Gateway using the Serverless Framework.

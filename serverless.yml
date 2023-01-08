@@ -95,7 +95,12 @@ functions:
       - httpApi:
           path: /
           method: post
-
+  updatePhoto:
+    handler: functions/updatePhoto.updatePhoto
+    events:
+      - httpApi:
+          path: /update
+          method: post
   getPhotos:
     handler: functions/getPhotos.getPhotos        
     events: 

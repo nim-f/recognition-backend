@@ -48,7 +48,7 @@ const renameFileInBucket = async (oldName, newName, bucketName) => {
 module.exports.updatePhoto = async (event) => {
     try {
         console.log(event.body);
-        const { id, name, newName, ...data } = JSON.parse(event.body);
+        const { primary_key, name, newName, ...data } = JSON.parse(event.body);
 
         if (newName) {
             // s3 rename
@@ -63,7 +63,7 @@ module.exports.updatePhoto = async (event) => {
 
         var params = {
             TableName: PHOTOS_TABLE,
-            Key: { primary_key: id },
+            Key: { primary_key },
             ...updateExpression,
         };
         await dynamoDb.update(params).promise();

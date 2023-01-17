@@ -7,12 +7,20 @@ provider:
   runtime: nodejs14.x
   timeout: 20
   environment:
+    USER_POOL: { Ref: UserPool }
+    USER_POOL_CLIENT: { Ref: UserClient }
     ORIGINAL_BUCKET_NAME: ${self:service}-public-photos-${sls:stage}
     THUMBNAIL_BUCKET_NAME: ${self:service}-public-thumbs-${sls:stage}
     PHOTOS_TABLE: ${self:service}-photos-${sls:stage}
   iam:
     role:
       statements:
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminInitiateAuth
+          - cognito-idp:AdminCreateUser
+          - cognito-idp:AdminSetUserPassword
+          Resource: "*"
         - Effect: Allow
           Action:
           - "s3:*"
@@ -39,6 +47,32 @@ provider:
          
 resources:
   Resources:
+    UserPool: 
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:service}-pool-${sls:stage}
+        Schema: 
+          - Name: email
+            Required: true
+            Mutable: true
+        Policies:
+          PasswordPolicy: 
+            MinimumLength: 6
+        AutoVerifiedAttributes: ["email"]    
+    UserClient: 
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-client-${sls:stage}
+        GenerateSecret: false
+        UserPoolId: 
+          Ref: UserPool
+        AccessTokenValidity: 5
+        IdTokenValidity: 5
+        ExplicitAuthFlows: 
+          - "ADMIN_NO_SRP_AUTH"
+
+
+
     PhotosTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -89,6 +123,19 @@ resources:
                 - !Join ['/', [!GetAtt [ThumbsBucket, Arn], '*']]
               Principal: "*"    
 functions:
+  register:
+    handler: functions/register.register
+    events:
+      - httpApi:
+          path: /register
+          method: post
+  login:
+    handler: functions/login.login
+    events:
+      - httpApi:
+          path: /login
+          method: post
+
   savePhoto:
     handler: functions/savePhoto.savePhoto
     events:
@@ -101,6 +148,12 @@ functions:
       - httpApi:
           path: /update
           method: post
+  deletePhoto:
+    handler: functions/deletePhoto.deletePhoto
+    events:
+      - httpApi:
+          path: /delete
+          method: delete          
   getPhotos:
     handler: functions/getPhotos.getPhotos        
     events: 

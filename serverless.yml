@@ -12,6 +12,13 @@ provider:
     ORIGINAL_BUCKET_NAME: ${self:service}-public-photos-${sls:stage}
     THUMBNAIL_BUCKET_NAME: ${self:service}-public-thumbs-${sls:stage}
     PHOTOS_TABLE: ${self:service}-photos-${sls:stage}
+  httpApi:
+    cors: true
+    authorizers: 
+      userAuthoriser:
+        identitySource: $request.header.Authorization
+        issuerUrl: {"Fn::Join": ["", ["https://cognito-idp.us-east-1.amazonaws.com/", { Ref: UserPool }]]}
+        audience: { Ref: UserClient }
   iam:
     role:
       statements:
@@ -42,8 +49,6 @@ provider:
           - 'dynamodb:UpdateItem'    
           - 'dynamodb:DeleteItem'    
           Resource: "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-photos-${sls:stage}"
-  httpApi:
-    cors: true
          
 resources:
   Resources:
@@ -142,25 +147,32 @@ functions:
       - httpApi:
           path: /
           method: post
+          authorizer: 
+            name: userAuthoriser
   updatePhoto:
     handler: functions/updatePhoto.updatePhoto
     events:
       - httpApi:
           path: /update
           method: post
+          authorizer: 
+            name: userAuthoriser
   deletePhoto:
     handler: functions/deletePhoto.deletePhoto
     events:
       - httpApi:
           path: /delete
           method: delete          
+          authorizer: 
+            name: userAuthoriser
   getPhotos:
     handler: functions/getPhotos.getPhotos        
     events: 
       - httpApi: 
           path: /
           method: get
-
+          authorizer: 
+            name: userAuthoriser
 plugins:
   - serverless-offline
 custom:

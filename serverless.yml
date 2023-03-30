@@ -178,3 +178,4 @@ plugins:
 custom:
   serverless-offline:
     useChildProcesses: true
+    noAuth: true

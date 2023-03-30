@@ -1,6 +1,6 @@
 const parser = require("lambda-multipart-parser");
 const { v4: uuidv4 } = require("uuid");
-const sharp = require("sharp");
+// const sharp = require("sharp");
 const sendResponse = require("../utils/sendResponse");
 const {
     PHOTOS_TABLE,
@@ -12,16 +12,16 @@ const { s3, rekognition, dynamoDb } = require("../const/providers");
 
 const width = 600;
 
-async function saveFile(file) {
-    const thumbnail = await sharp(file.content)
-        .resize(width)
-        .withMetadata()
-        .toBuffer();
-
+async function saveFile(file, userId) {
+    const thumbnail = file.content; //await sharp(file.content)
+    // .resize(width)
+    // .withMetadata()
+    // .toBuffer();
+    const Key = `${userId}/${file.filename}`;
     await s3
         .putObject({
             Bucket: THUMBNAIL_BUCKET_NAME,
-            Key: file.filename,
+            Key,
             Body: thumbnail,
         })
         .promise();
@@ -29,7 +29,7 @@ async function saveFile(file) {
     await s3
         .putObject({
             Bucket: ORIGINAL_BUCKET_NAME,
-            Key: file.filename,
+            Key,
             Body: file.content,
         })
         .promise();
@@ -51,21 +51,22 @@ async function saveFile(file) {
                 primary_key,
                 name: file.filename,
                 labels,
+                userId,
             },
         })
         .promise();
     return {
         primary_key,
-        savedFile: `https://${ORIGINAL_BUCKET_NAME}.s3.amazonaws.com/${file.filename}`,
-        thumbnail: `https://${THUMBNAIL_BUCKET_NAME}.s3.amazonaws.com/${file.filename}`,
+        savedFile: `https://${ORIGINAL_BUCKET_NAME}.s3.amazonaws.com/${Key}`,
+        thumbnail: `https://${THUMBNAIL_BUCKET_NAME}.s3.amazonaws.com/${Key}`,
         labels,
     };
 }
 
 module.exports.savePhoto = async (event) => {
     try {
-        const { files } = await parser.parse(event);
-        const filesData = files.map(saveFile);
+        const { files, userId } = await parser.parse(event);
+        const filesData = files.map((file) => saveFile(file, userId));
         const results = await Promise.all(filesData);
 
         return sendResponse(200, results);

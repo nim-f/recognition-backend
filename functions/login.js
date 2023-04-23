@@ -5,7 +5,6 @@ const { USER_POOL, USER_POOL_CLIENT } = require("../const/paths");
 const { cognito } = require("../const/providers");
 module.exports.login = async (event) => {
     try {
-        console.log({ env: JSON.stringify(process.env) });
         const { email, password } = JSON.parse(event.body);
 
         const response = await cognito
@@ -20,14 +19,12 @@ module.exports.login = async (event) => {
             })
             .promise();
 
-        console.log({ response });
         const data = await cognito
             .getUser({
                 AccessToken: response.AuthenticationResult.AccessToken,
             })
             .promise();
 
-        console.log({ data });
         return sendResponse(200, {
             ...formatUserAttributes(data.UserAttributes),
             ...response.AuthenticationResult,

@@ -21,23 +21,22 @@ module.exports.getPhotos = async (event) => {
 
     const ExclusiveStartKey = {
         primary_key: startKey,
+        userId,
     };
 
-    const filter = label
-        ? {
-              ExpressionAttributeValues: {
-                  ":label": label,
-                  ":userId": userId,
-              },
-              FilterExpression:
-                  "contains (labels, :label) and userId = :userId",
-          }
-        : {
-              ExpressionAttributeValues: {
-                  ":userId": userId,
-              },
-              FilterExpression: "userId = :userId",
-          };
+    const filter = {
+        IndexName: "userId-index",
+        ExpressionAttributeValues: {
+            ":userId": userId,
+        },
+        KeyConditionExpression: "userId = :userId",
+    };
+
+    if (label) {
+        filter.FilterExpression = "contains (labels, :label)";
+        filter.ExpressionAttributeValues[":label"] = label;
+    }
+
     const results = await fetchWithFilter({
         TableName: PHOTOS_TABLE,
         Limit: limit || 10,

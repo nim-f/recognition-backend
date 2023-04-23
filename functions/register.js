@@ -9,10 +9,8 @@ const {
 const { s3, rekognition, dynamoDb, cognito } = require("../const/providers");
 module.exports.register = async (event) => {
     try {
-        console.log({ USER_POOL });
         const { email, password } = JSON.parse(event.body);
 
-        console.log({ email, password });
         const result = await cognito
             .adminCreateUser({
                 UserPoolId: USER_POOL,

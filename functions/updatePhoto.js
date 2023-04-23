@@ -47,7 +47,6 @@ const renameFileInBucket = async (oldName, newName, bucketName) => {
 
 module.exports.updatePhoto = async (event) => {
     try {
-        console.log(event.body);
         const { primary_key, name, newName, ...data } = JSON.parse(event.body);
 
         if (newName) {
@@ -58,8 +57,6 @@ module.exports.updatePhoto = async (event) => {
         }
 
         const updateExpression = createUpdateExpression(data);
-
-        console.log({ updateExpression });
 
         var params = {
             TableName: PHOTOS_TABLE,
